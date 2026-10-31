@@ -8,27 +8,30 @@ describe('TodoApp', () => {
     localStorage.clear();
   });
 
-  it('renders the title and input', () => {
+  it('renders input without placeholder or header text', () => {
     render(<TodoApp />);
-    expect(screen.getByPlaceholderText(/what needs to be done/i)).toBeInTheDocument();
+    const input = screen.getByRole('textbox', { name: /new task/i });
+    expect(input).toBeInTheDocument();
+    expect(input).not.toHaveAttribute('placeholder');
+    expect(screen.queryByText(/minimal & focused/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/capture your thoughts/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
   });
 
-  it('adds a new todo item and stores it', () => {
+  it('adds a new todo item and displays it', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: 'Buy groceries' } });
     fireEvent.click(addButton);
 
     expect(screen.getByText('Buy groceries')).toBeInTheDocument();
-    expect(screen.getByText(/1 item left/i)).toBeInTheDocument();
   });
 
   it('does not add empty or whitespace-only todos', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: '   ' } });
@@ -39,7 +42,7 @@ describe('TodoApp', () => {
 
   it('toggles a todo between active and completed', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: 'Read a book' } });
@@ -50,12 +53,11 @@ describe('TodoApp', () => {
 
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
-    expect(screen.getByText(/0 items left/i)).toBeInTheDocument();
   });
 
   it('deletes a todo item', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: 'Task to delete' } });
@@ -69,9 +71,9 @@ describe('TodoApp', () => {
     expect(screen.queryByText('Task to delete')).not.toBeInTheDocument();
   });
 
-  it('filters todos by active and completed status', () => {
+  it('filters todos by active and completed status without counter text', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     // Add first item
@@ -81,6 +83,9 @@ describe('TodoApp', () => {
     // Add second item
     fireEvent.change(input, { target: { value: 'Done task' } });
     fireEvent.click(addButton);
+
+    // Ensure counter is not rendered
+    expect(screen.queryByText(/items left/i)).not.toBeInTheDocument();
 
     // Complete the second item
     const doneCheckbox = screen.getByRole('checkbox', { name: /mark "Done task" as complete/i });
@@ -104,7 +109,7 @@ describe('TodoApp', () => {
 
   it('clears completed todos', () => {
     render(<TodoApp />);
-    const input = screen.getByPlaceholderText(/what needs to be done/i);
+    const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: 'To finish' } });
