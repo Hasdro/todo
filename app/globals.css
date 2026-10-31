@@ -24,3 +24,64 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ---------------- Mascot micro-expressions ---------------- */
+.mascot-part {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 200ms ease;
+}
+
+.mascot-blink {
+  transition-duration: 70ms;
+}
+
+.mascot-motion {
+  transform-origin: 50% 85%;
+}
+
+.mascot-arm {
+  transform-box: fill-box;
+  transform-origin: 10% 30%;
+}
+
+.mascot-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mascot-sparkle 900ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.mascot-sweat {
+  animation: mascot-sweat 1100ms ease-in both;
+}
+
+.mascot-sigh {
+  animation: mascot-sigh 1200ms ease-out both;
+}
+
+@keyframes mascot-sparkle {
+  0% { opacity: 0; scale: 0; rotate: -45deg; }
+  40% { opacity: 1; scale: 1.15; rotate: 0deg; }
+  100% { opacity: 0; scale: 0.6; rotate: 30deg; }
+}
+
+@keyframes mascot-sweat {
+  0% { opacity: 0; translate: 0 -2px; }
+  25% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 6px; }
+}
+
+@keyframes mascot-sigh {
+  0% { opacity: 0; translate: 0 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; translate: 6px -6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-part { transition-duration: 1ms; }
+  .mascot-sparkle,
+  .mascot-sweat,
+  .mascot-sigh { animation-duration: 1ms; }
+}

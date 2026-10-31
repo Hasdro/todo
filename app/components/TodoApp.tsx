@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useSyncExternalStore } from 'react';
 import { Check, Trash2, Plus, GripVertical } from 'lucide-react';
-import MascotCharacter from './MascotCharacter';
+import MascotCharacter, { type MascotEvent, type MascotEventType } from './MascotCharacter';
 
 export interface Todo {
   id: string;
@@ -64,6 +64,11 @@ export default function TodoApp() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
+  // Latest action, forwarded to the mascot so it can react
+  const [mascotEvent, setMascotEvent] = useState<MascotEvent | null>(null);
+  const notifyMascot = (type: MascotEventType) =>
+    setMascotEvent((prev) => ({ type, id: (prev?.id ?? 0) + 1 }));
+
   const rawTodos = useSyncExternalStore(
     todosStore.subscribe,
     todosStore.getSnapshot,
@@ -87,9 +92,12 @@ export default function TodoApp() {
     const newTodo = createTodoItem(trimmed);
     todosStore.save([newTodo, ...todos]);
     setInputText('');
+    notifyMascot('add');
   };
 
   const toggleTodo = (id: string) => {
+    const target = todos.find((todo) => todo.id === id);
+    if (target) notifyMascot(target.completed ? 'uncomplete' : 'complete');
     const updated = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
@@ -99,12 +107,14 @@ export default function TodoApp() {
   const deleteTodo = (id: string) => {
     const updated = todos.filter((todo) => todo.id !== id);
     todosStore.save(updated);
+    notifyMascot('delete');
   };
 
   const clearCompleted = () => {
     const updated = todos.filter((todo) => !todo.completed);
     todosStore.save(updated);
     setFilter('active');
+    notifyMascot('clear');
   };
 
   const activeCount = todos.filter((t) => !t.completed).length;
@@ -167,6 +177,7 @@ export default function TodoApp() {
       const [moved] = updated.splice(sourceIndex, 1);
       updated.splice(targetIndex, 0, moved);
       todosStore.save(updated);
+      notifyMascot('drop');
     }
 
     setDraggedId(null);
@@ -198,7 +209,11 @@ export default function TodoApp() {
 
           {/* Ghost Companion beside Add Button */}
           <div className="shrink-0 flex items-center justify-center -my-3 mr-1.5">
-            <MascotCharacter />
+            <MascotCharacter
+              event={mascotEvent}
+              attentive={inputText.trim().length > 0}
+              dragging={draggedId !== null}
+            />
           </div>
 
           {/* White-ish Modern Add Button */}

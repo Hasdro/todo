@@ -1,37 +1,90 @@
 import '@testing-library/jest-dom/vitest';
-import { render } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import MascotCharacter from '../MascotCharacter';
+import { act, render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import MascotCharacter, { type MascotEvent } from '../MascotCharacter';
 
-describe('MascotCharacter Ghost', () => {
-  it('renders ghost character with light ethereal colors, big eyes, and larger size', () => {
+const moodOf = (container: HTMLElement) =>
+  container.querySelector('[data-mood]')?.getAttribute('data-mood');
+const mouthOf = (container: HTMLElement) =>
+  container.querySelector('[data-testid="ghost-mouth"]')?.getAttribute('data-mouth');
+
+describe('MascotCharacter ghost', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('renders the ghost body, face and gradient', () => {
     const { container } = render(<MascotCharacter />);
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
-
-    // Verify it is larger in size (w-16 h-16 or bigger)
     expect(svg?.getAttribute('class')).toContain('w-16 h-16');
-
-    // Must be a ghost character with wavy bottom sheet/body
-    const ghostBody = container.querySelector('[data-testid="ghost-body"]');
-    expect(ghostBody).toBeInTheDocument();
-
-    // Must have light ethereal ghost styling
-    const ghostGradient = container.querySelector('#ghostBodyGrad');
-    expect(ghostGradient).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="ghost-body"]')).toBeInTheDocument();
+    expect(container.querySelector('#ghostBodyGrad')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="ghost-brow-left"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="ghost-brow-right"]')).toBeInTheDocument();
   });
 
-  it('keeps calm, friendly ghost expression consistently without mood disruptions', () => {
+  it('is calm and smiling when idle', () => {
     const { container } = render(<MascotCharacter />);
-    // Does not have violent mood bounce animations
-    expect(container.querySelector('.animate-bounce')).not.toBeInTheDocument();
+    expect(moodOf(container)).toBe('idle');
+    expect(mouthOf(container)).toBe('smile');
+  });
 
-    // Renders calm smiling ghost mouth
-    const smile = container.querySelector('[data-testid="ghost-smile"]');
-    expect(smile).toBeInTheDocument();
+  it('becomes attentive while the user types and focused while dragging', () => {
+    const { container, rerender } = render(<MascotCharacter attentive />);
+    expect(moodOf(container)).toBe('attentive');
 
-    // Has left and right eye tracking structures
-    expect(container.querySelector('#ghostLeftEyeClip')).toBeInTheDocument();
-    expect(container.querySelector('#ghostRightEyeClip')).toBeInTheDocument();
+    rerender(<MascotCharacter attentive dragging />);
+    expect(moodOf(container)).toBe('focused');
+  });
+
+  it('beams when a task is added, then settles back', () => {
+    const { container, rerender } = render(<MascotCharacter />);
+    rerender(<MascotCharacter event={{ type: 'add', id: 1 }} />);
+    act(() => vi.advanceTimersByTime(0));
+    expect(moodOf(container)).toBe('happy');
+    expect(mouthOf(container)).toBe('grin');
+
+    act(() => vi.advanceTimersByTime(1400));
+    expect(moodOf(container)).toBe('idle');
+  });
+
+  it('is proud when a task is completed and curious when it is reopened', () => {
+    const { container, rerender } = render(<MascotCharacter />);
+    rerender(<MascotCharacter event={{ type: 'complete', id: 1 }} />);
+    act(() => vi.advanceTimersByTime(0));
+    expect(moodOf(container)).toBe('proud');
+
+    rerender(<MascotCharacter event={{ type: 'uncomplete', id: 2 }} />);
+    act(() => vi.advanceTimersByTime(0));
+    expect(moodOf(container)).toBe('curious');
+  });
+
+  it('flinches then looks sad when a task is deleted', () => {
+    const { container, rerender } = render(<MascotCharacter />);
+    rerender(<MascotCharacter event={{ type: 'delete', id: 1 }} />);
+    act(() => vi.advanceTimersByTime(0));
+    expect(moodOf(container)).toBe('surprised');
+
+    act(() => vi.advanceTimersByTime(450));
+    expect(moodOf(container)).toBe('sad');
+
+    act(() => vi.advanceTimersByTime(1000));
+    expect(moodOf(container)).toBe('idle');
+  });
+
+  it('replays the reaction for repeated events of the same type', () => {
+    const { container, rerender } = render(<MascotCharacter />);
+    const fire = (e: MascotEvent) => {
+      rerender(<MascotCharacter event={e} />);
+      act(() => vi.advanceTimersByTime(0));
+    };
+    fire({ type: 'clear', id: 1 });
+    act(() => vi.advanceTimersByTime(2000));
+    expect(moodOf(container)).toBe('idle');
+
+    fire({ type: 'clear', id: 2 });
+    expect(moodOf(container)).toBe('surprised');
+    act(() => vi.advanceTimersByTime(350));
+    expect(moodOf(container)).toBe('relieved');
   });
 });
