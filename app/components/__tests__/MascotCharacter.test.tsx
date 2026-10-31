@@ -3,23 +3,24 @@ import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import MascotCharacter from '../MascotCharacter';
 
-describe('MascotCharacter', () => {
-  it('renders circular companion character with light colors and eyes', () => {
+describe('MascotCharacter Ghost', () => {
+  it('renders ghost-like animated character with light ethereal colors and eyes', () => {
     const { container } = render(<MascotCharacter mood="idle" />);
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
 
-    // Must be a circular character (contains circular body element)
-    const circularBody = container.querySelector('circle[r="32"]') || container.querySelector('circle');
-    expect(circularBody).toBeInTheDocument();
+    // Must be a ghost character with wavy bottom sheet/body
+    const ghostBody = container.querySelector('[data-testid="ghost-body"]');
+    expect(ghostBody).toBeInTheDocument();
 
-    // Must not contain bunny ears
-    expect(container.querySelector('#innerEarGrad')).not.toBeInTheDocument();
+    // Must have light ethereal ghost styling
+    const ghostGradient = container.querySelector('#ghostBodyGrad');
+    expect(ghostGradient).toBeInTheDocument();
   });
 
-  it('renders different facial expressions based on mood', () => {
+  it('renders different facial expressions based on mood for ghost', () => {
     const { rerender, container } = render(<MascotCharacter mood="adding" />);
-    // Adding: joyful celebration expression
+    // Adding: joyful float bounce
     expect(container.querySelector('.animate-bounce')).toBeInTheDocument();
 
     rerender(<MascotCharacter mood="completing" />);
@@ -27,11 +28,11 @@ describe('MascotCharacter', () => {
     expect(container.innerHTML).toContain('star');
 
     rerender(<MascotCharacter mood="deleting" />);
-    // Deleting: shocked expression
+    // Deleting: shocked ghost expression
     expect(container.firstChild).toBeInTheDocument();
 
     rerender(<MascotCharacter mood="reordering" />);
-    // Reordering: curious expression
+    // Reordering: playful curious ghost
     expect(container.firstChild).toBeInTheDocument();
   });
 });

@@ -127,15 +127,27 @@ export default function TodoApp() {
     setFilter('active');
   };
 
+  const activeCount = todos.filter((t) => !t.completed).length;
   const completedCount = todos.filter((t) => t.completed).length;
 
-  // Derived effective filter: if no completed tasks remain, fallback to 'active'
-  const activeFilter = filter === 'completed' && completedCount === 0 ? 'active' : filter;
-
-  // Available tabs: only show 'completed' tab if completedCount > 0
+  // Available tabs: only show 'active' if activeCount > 0, and 'completed' if completedCount > 0
   const availableTabs: FilterType[] = useMemo(() => {
-    return completedCount > 0 ? ['active', 'completed'] : ['active'];
-  }, [completedCount]);
+    const tabs: FilterType[] = [];
+    if (activeCount > 0) tabs.push('active');
+    if (completedCount > 0) tabs.push('completed');
+    return tabs;
+  }, [activeCount, completedCount]);
+
+  // Derived effective filter based on available counts
+  const activeFilter: FilterType = useMemo(() => {
+    if (filter === 'completed') {
+      return completedCount > 0 ? 'completed' : 'active';
+    }
+    if (filter === 'active') {
+      return activeCount > 0 ? 'active' : (completedCount > 0 ? 'completed' : 'active');
+    }
+    return 'active';
+  }, [filter, activeCount, completedCount]);
 
   const filteredTodos = useMemo(() => {
     return todos.filter((todo) => {
@@ -221,37 +233,39 @@ export default function TodoApp() {
           </button>
         </form>
 
-        {/* Filter Bar */}
-        <div className="px-5 py-3 bg-zinc-50/70 dark:bg-zinc-900/60 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-          <div className="flex items-center gap-1.5">
-            {availableTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-lg capitalize font-medium transition-colors cursor-pointer ${
-                  activeFilter === tab
-                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
-                    : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+        {/* Filter Bar - only rendered if there is at least one active or completed tab */}
+        {availableTabs.length > 0 && (
+          <div className="px-5 py-3 bg-zinc-50/70 dark:bg-zinc-900/60 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-1.5">
+              {availableTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setFilter(tab)}
+                  className={`px-3 py-1.5 rounded-lg capitalize font-medium transition-colors cursor-pointer ${
+                    activeFilter === tab
+                      ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                      : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-          {/* Clear Completed Button - specifically displayed when Completed tab is selected */}
-          {activeFilter === 'completed' && completedCount > 0 && (
-            <button
-              type="button"
-              onClick={clearCompleted}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear completed ({completedCount})</span>
-            </button>
-          )}
-        </div>
+            {/* Clear Completed Button - specifically displayed when Completed tab is selected */}
+            {activeFilter === 'completed' && completedCount > 0 && (
+              <button
+                type="button"
+                onClick={clearCompleted}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear completed ({completedCount})</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Todo List with Drag & Drop Reordering */}
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 min-h-[380px] max-h-[600px] overflow-y-auto">

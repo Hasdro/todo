@@ -8,7 +8,7 @@ describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
     localStorage.clear();
   });
 
-  it('renders input, modern Add button, and mascot without All tab', () => {
+  it('renders input, modern Add button, and mascot without any tabs when no tasks exist', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
     expect(input).toBeInTheDocument();
@@ -17,30 +17,36 @@ describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
     expect(addButton).toBeInTheDocument();
     expect(addButton.className).toContain('bg-white');
 
-    // Only 2 tabs: Active and Completed. 'All' tab should never exist!
+    // When there is no task, do not even show the active tasks tab or completed tab
     expect(screen.queryByRole('button', { name: /^all$/i })).not.toBeInTheDocument();
-    // Initially, when no completed tasks exist, Completed tab is hidden, only Active is visible
-    expect(screen.getByRole('button', { name: /^active$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
   });
 
-  it('only shows Completed tab when at least one task is completed', () => {
+  it('shows Active tab when active task exists, and Completed tab when completed task exists', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
     const addButton = screen.getByRole('button', { name: /add/i });
 
+    // Initially no tabs
+    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
+
+    // Add an active task
     fireEvent.change(input, { target: { value: 'Task 1' } });
     fireEvent.click(addButton);
 
-    // Still not completed
+    // Active tab now appears! Completed tab is still hidden
+    expect(screen.getByRole('button', { name: /^active$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
 
     // Mark as complete
     const checkbox = screen.getByRole('checkbox', { name: /mark "Task 1" as complete/i });
     fireEvent.click(checkbox);
 
-    // Completed tab now appears!
+    // Completed tab now appears! And since activeCount is 0, Active tab is hidden
     expect(screen.getByRole('button', { name: /^completed$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
   });
 
   it('shows Clear Completed button only when Completed tab is selected and clears tasks', () => {
@@ -51,10 +57,13 @@ describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
     fireEvent.change(input, { target: { value: 'Task to finish' } });
     fireEvent.click(addButton);
 
+    fireEvent.change(input, { target: { value: 'Task to keep active' } });
+    fireEvent.click(addButton);
+
     const checkbox = screen.getByRole('checkbox', { name: /mark "Task to finish" as complete/i });
     fireEvent.click(checkbox);
 
-    // On 'all' tab, Clear completed button is not shown
+    // On 'active' tab, Clear completed button is not shown
     expect(screen.queryByRole('button', { name: /clear completed/i })).not.toBeInTheDocument();
 
     // Click 'Completed' tab
@@ -70,6 +79,8 @@ describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
 
     // Completed task removed from memory & state
     expect(screen.queryByText('Task to finish')).not.toBeInTheDocument();
+    // Active task is still there
+    expect(screen.getByText('Task to keep active')).toBeInTheDocument();
     // Completed tab disappears because 0 completed tasks remain
     expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
   });
