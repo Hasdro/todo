@@ -2,14 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
-export type MascotMood = 'idle' | 'adding' | 'completing' | 'deleting' | 'reordering';
-
 interface MascotProps {
-  mood?: MascotMood;
   className?: string;
 }
 
-export default function MascotCharacter({ mood = 'idle', className = '' }: MascotProps) {
+export default function MascotCharacter({ className = '' }: MascotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const leftEyeRef = useRef<SVGGElement>(null);
   const rightEyeRef = useRef<SVGGElement>(null);
@@ -19,7 +16,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
   const currentPos = useRef({ lx: 0, ly: 0, rx: 0, ry: 0 });
   const [pupils, setPupils] = useState({ lx: 0, ly: 0, rx: 0, ry: 0 });
 
-  // Blinking state
+  // Natural blinking state
   const [isBlinking, setIsBlinking] = useState(false);
 
   // Ethereal floating & breathing offset
@@ -42,8 +39,8 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
         const distance = Math.hypot(dx, dy);
         const angle = Math.atan2(dy, dx);
 
-        // Max movement radius inside ghost eye
-        const maxRadius = 4.2;
+        // Movement radius inside ghost eye
+        const maxRadius = 4.4;
         const radius = Math.min(maxRadius, distance / 36);
 
         return {
@@ -101,10 +98,8 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
     return () => cancelAnimationFrame(animId);
   }, []);
 
-  // Periodic natural blinking (only when not in an action expression)
+  // Periodic natural blinking
   useEffect(() => {
-    if (mood !== 'idle') return;
-
     let timeoutId: NodeJS.Timeout;
 
     const scheduleNextBlink = () => {
@@ -120,19 +115,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
 
     scheduleNextBlink();
     return () => clearTimeout(timeoutId);
-  }, [mood]);
-
-  // Mood-specific styles and transforms
-  let moodTransform = '';
-  if (mood === 'adding') {
-    moodTransform = 'animate-bounce';
-  } else if (mood === 'deleting') {
-    moodTransform = 'scale-90 rotate-[-5deg] transition-transform duration-200';
-  } else if (mood === 'completing') {
-    moodTransform = 'scale-105 rotate-[4deg] transition-transform duration-200';
-  } else if (mood === 'reordering') {
-    moodTransform = 'rotate-[-8deg] translate-y-[-2px] transition-transform duration-200';
-  }
+  }, []);
 
   return (
     <div
@@ -143,10 +126,11 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
       }}
       aria-hidden="true"
     >
-      <div className={`transition-all duration-300 ease-out ${moodTransform}`}>
+      <div className="transition-all duration-300 ease-out">
+        {/* Slightly bigger ghost SVG (w-16 h-16 sm:w-18 sm:h-18) */}
         <svg
           viewBox="0 0 84 84"
-          className="w-12 h-12 sm:w-14 sm:h-14 overflow-visible drop-shadow-sm"
+          className="w-16 h-16 sm:w-18 sm:h-18 overflow-visible drop-shadow-sm"
         >
           <defs>
             {/* Ethereal light pastel ghost gradient */}
@@ -157,7 +141,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               <stop offset="100%" stopColor="#BAE6FD" />
             </linearGradient>
 
-            {/* Ghost eye clip paths to keep pupils inside */}
+            {/* Ghost eye clip paths to keep pupils cleanly inside */}
             <clipPath id="ghostLeftEyeClip">
               <ellipse cx="32" cy="38" rx="8.5" ry="11.5" />
             </clipPath>
@@ -166,7 +150,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             </clipPath>
           </defs>
 
-          {/* Ethereal Floating Ghost Shadow (scales inversely with float) */}
+          {/* Ethereal Floating Ghost Shadow */}
           <ellipse
             cx="42"
             cy="76"
@@ -226,8 +210,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             rx="4.8"
             ry="3.2"
             fill="#F472B6"
-            opacity={mood === 'adding' || mood === 'completing' ? 0.8 : 0.45}
-            className="transition-opacity duration-300"
+            opacity={0.5}
           />
           <ellipse
             cx="60"
@@ -235,94 +218,11 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             rx="4.8"
             ry="3.2"
             fill="#F472B6"
-            opacity={mood === 'adding' || mood === 'completing' ? 0.8 : 0.45}
-            className="transition-opacity duration-300"
+            opacity={0.5}
           />
 
           {/* ================= GHOST EYES ================= */}
-          {/* Mood: Adding / Celebration -> Joyful Arcs (^ ^) */}
-          {mood === 'adding' ? (
-            <g>
-              <path
-                d="M 24 39 Q 32 28 40 39"
-                fill="none"
-                stroke="#0F172A"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 44 39 Q 52 28 60 39"
-                fill="none"
-                stroke="#0F172A"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-              {/* Little celebration star above ghost */}
-              <path
-                className="star-sparkle"
-                data-testid="star"
-                d="M 42 10 L 43.5 14 L 47 15 L 43.5 16 L 42 20 L 40.5 16 L 37 15 L 40.5 14 Z"
-                fill="#FBBF24"
-              />
-            </g>
-          ) : mood === 'completing' ? (
-            /* Mood: Completing -> Celebratory Wink & Star (^ ~) */
-            <g>
-              {/* Left Eye: Happy Wink Arc */}
-              <path
-                d="M 24 39 Q 32 30 40 39"
-                fill="none"
-                stroke="#0F172A"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-              />
-              {/* Right Eye: Starry Proud Ghost Eye */}
-              <ellipse
-                cx="52"
-                cy="38"
-                rx="8.5"
-                ry="11.5"
-                fill="#FFFFFF"
-                stroke="#BAE6FD"
-                strokeWidth="1.2"
-              />
-              <g clipPath="url(#ghostRightEyeClip)">
-                <circle cx="52" cy="38" r="6.6" fill="#0F172A" />
-                {/* Celebratory yellow star inside eye */}
-                <path
-                  className="eye-star"
-                  data-testid="star"
-                  d="M 52 34 L 53 37 L 56 38 L 53 39 L 52 42 L 51 39 L 48 38 L 51 37 Z"
-                  fill="#FDE047"
-                />
-              </g>
-            </g>
-          ) : mood === 'deleting' ? (
-            /* Mood: Deleting -> "Spooked" Ghost with wide round eyes & tiny pupils */
-            <g>
-              <ellipse
-                cx="32"
-                cy="38"
-                rx="9"
-                ry="12"
-                fill="#FFFFFF"
-                stroke="#BAE6FD"
-                strokeWidth="1.2"
-              />
-              <ellipse
-                cx="52"
-                cy="38"
-                rx="9"
-                ry="12"
-                fill="#FFFFFF"
-                stroke="#BAE6FD"
-                strokeWidth="1.2"
-              />
-              {/* Tiny startled ghost pupils */}
-              <circle cx="32" cy="38" r="2.8" fill="#0F172A" />
-              <circle cx="52" cy="38" r="2.8" fill="#0F172A" />
-            </g>
-          ) : isBlinking ? (
+          {isBlinking ? (
             /* Natural Blinking Lines */
             <g>
               <path
@@ -341,7 +241,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               />
             </g>
           ) : (
-            /* Default / Reordering: Big Cute Glossy Eyes with Smooth Tracking */
+            /* Big Cute Glossy Eyes with Smooth Mouse Cursor Tracking */
             <g>
               {/* Left Eye */}
               <g ref={leftEyeRef}>
@@ -396,57 +296,15 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
           )}
 
           {/* ================= GHOST MOUTH ================= */}
-          {mood === 'adding' ? (
-            /* Open laughing joyful mouth */
-            <path
-              d="M 38 47 Q 42 55 46 47 Z"
-              fill="#F43F5E"
-              stroke="#0F172A"
-              strokeWidth="1.6"
-            />
-          ) : mood === 'completing' ? (
-            /* Proud happy curved grin */
-            <path
-              d="M 37 47 Q 42 53 47 47"
-              fill="none"
-              stroke="#0F172A"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            />
-          ) : mood === 'deleting' ? (
-            /* Small surprised round "O" ghost mouth ("Ooo!") */
-            <ellipse
-              cx="42"
-              cy="50"
-              rx="3"
-              ry="4.4"
-              fill="#0F172A"
-            />
-          ) : mood === 'reordering' ? (
-            /* Playful curious ghost mouth with tongue peek */
-            <g>
-              <path
-                d="M 38 47 Q 42 53 46 47"
-                fill="none"
-                stroke="#0F172A"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 40.5 49 Q 42 53 43.5 49"
-                fill="#FB7185"
-              />
-            </g>
-          ) : (
-            /* Default sweet gentle ghost smile */
-            <path
-              d="M 38 47 Q 42 51.5 46 47"
-              fill="none"
-              stroke="#334155"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          )}
+          {/* Calm, sweet gentle ghost smile consistently */}
+          <path
+            data-testid="ghost-smile"
+            d="M 38 47 Q 42 51.5 46 47"
+            fill="none"
+            stroke="#334155"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     </div>

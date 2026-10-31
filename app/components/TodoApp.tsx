@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useSyncExternalStore, useRef } from 'react';
+import React, { useState, useMemo, useSyncExternalStore } from 'react';
 import { Check, Trash2, Plus, GripVertical } from 'lucide-react';
-import MascotCharacter, { MascotMood } from './MascotCharacter';
+import MascotCharacter from './MascotCharacter';
 
 export interface Todo {
   id: string;
@@ -59,8 +59,6 @@ const todosStore = {
 export default function TodoApp() {
   const [inputText, setInputText] = useState('');
   const [filter, setFilter] = useState<FilterType>('active');
-  const [mascotMood, setMascotMood] = useState<MascotMood>('idle');
-  const moodTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Drag and drop state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -81,14 +79,6 @@ export default function TodoApp() {
     }
   }, [rawTodos]);
 
-  const triggerMood = (mood: MascotMood, duration = 2200) => {
-    if (moodTimeoutRef.current) clearTimeout(moodTimeoutRef.current);
-    setMascotMood(mood);
-    moodTimeoutRef.current = setTimeout(() => {
-      setMascotMood('idle');
-    }, duration);
-  };
-
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputText.trim();
@@ -97,33 +87,23 @@ export default function TodoApp() {
     const newTodo = createTodoItem(trimmed);
     todosStore.save([newTodo, ...todos]);
     setInputText('');
-    triggerMood('adding');
   };
 
   const toggleTodo = (id: string) => {
-    const target = todos.find((t) => t.id === id);
-    const willBeCompleted = target ? !target.completed : false;
-
     const updated = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
     todosStore.save(updated);
-
-    if (willBeCompleted) {
-      triggerMood('completing');
-    }
   };
 
   const deleteTodo = (id: string) => {
     const updated = todos.filter((todo) => todo.id !== id);
     todosStore.save(updated);
-    triggerMood('deleting');
   };
 
   const clearCompleted = () => {
     const updated = todos.filter((todo) => !todo.completed);
     todosStore.save(updated);
-    triggerMood('deleting');
     setFilter('active');
   };
 
@@ -187,7 +167,6 @@ export default function TodoApp() {
       const [moved] = updated.splice(sourceIndex, 1);
       updated.splice(targetIndex, 0, moved);
       todosStore.save(updated);
-      triggerMood('reordering');
     }
 
     setDraggedId(null);
@@ -217,9 +196,9 @@ export default function TodoApp() {
             autoFocus
           />
 
-          {/* Animated Cartoon Mascot Companion beside Add Button */}
-          <div className="shrink-0 flex items-center justify-center -my-2 mr-1">
-            <MascotCharacter mood={mascotMood} />
+          {/* Ghost Companion beside Add Button */}
+          <div className="shrink-0 flex items-center justify-center -my-3 mr-1.5">
+            <MascotCharacter />
           </div>
 
           {/* White-ish Modern Add Button */}
