@@ -25,7 +25,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
   // Gentle breathing offset
   const [breathPhase, setBreathPhase] = useState(0);
 
-  // Mouse / cursor tracking
+  // Mouse / cursor tracking with trigonometry
   useEffect(() => {
     const handlePointerMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -42,9 +42,9 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
         const angle = Math.atan2(dy, dx);
 
         // Max movement radius inside eye
-        const maxRadius = 4.8;
+        const maxRadius = 4.6;
         // Natural scaling: closer mouse = closer to edge, far mouse = edge
-        const radius = Math.min(maxRadius, distance / 40);
+        const radius = Math.min(maxRadius, distance / 38);
 
         return {
           x: Math.cos(angle) * radius,
@@ -145,84 +145,55 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
     >
       <div className={`transition-all duration-300 ease-out ${moodTransform}`}>
         <svg
-          viewBox="0 0 84 80"
+          viewBox="0 0 84 84"
           className="w-12 h-12 sm:w-14 sm:h-14 overflow-visible drop-shadow-sm"
         >
           <defs>
-            {/* Cute light pastel gradient body */}
-            <linearGradient id="mascotBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#FFFDF5" />
-              <stop offset="60%" stopColor="#FFF0D0" />
-              <stop offset="100%" stopColor="#FFE4B5" />
-            </linearGradient>
+            {/* Soft, light 3D spherical gradient for circular character */}
+            <radialGradient id="mascotCircleGrad" cx="35%" cy="30%" r="68%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="42%" stopColor="#FFFDF7" />
+              <stop offset="78%" stopColor="#FEF0D8" />
+              <stop offset="100%" stopColor="#FCE3C0" />
+            </radialGradient>
 
-            {/* Inner ear gradient */}
-            <linearGradient id="innerEarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#FFD1DC" />
-              <stop offset="100%" stopColor="#FFAAA6" />
-            </linearGradient>
-
-            {/* Eye clip paths to keep pupils inside */}
+            {/* Eye clip paths to keep pupils cleanly inside */}
             <clipPath id="leftEyeClip">
-              <ellipse cx="28" cy="40" rx="9.5" ry="12" />
+              <ellipse cx="29" cy="40" rx="9.5" ry="12.5" />
             </clipPath>
             <clipPath id="rightEyeClip">
-              <ellipse cx="56" cy="40" rx="9.5" ry="12" />
+              <ellipse cx="55" cy="40" rx="9.5" ry="12.5" />
             </clipPath>
           </defs>
 
-          {/* Left Ear */}
-          <ellipse
-            cx="22"
-            cy="18"
-            rx="7"
-            ry="11"
-            transform="rotate(-18 22 18)"
-            fill="#FFF0D0"
-            stroke="#E0CDA9"
-            strokeWidth="1.5"
-          />
-          <ellipse
-            cx="22"
-            cy="19"
-            rx="3.5"
-            ry="6"
-            transform="rotate(-18 22 19)"
-            fill="url(#innerEarGrad)"
-          />
+          {/* Soft ambient ground shadow */}
+          <ellipse cx="42" cy="75" rx="20" ry="4" fill="#000000" opacity="0.08" />
 
-          {/* Right Ear */}
-          <ellipse
-            cx="62"
-            cy="18"
-            rx="7"
-            ry="11"
-            transform="rotate(18 62 18)"
-            fill="#FFF0D0"
-            stroke="#E0CDA9"
-            strokeWidth="1.5"
-          />
-          <ellipse
-            cx="62"
-            cy="19"
-            rx="3.5"
-            ry="6"
-            transform="rotate(18 62 19)"
-            fill="url(#innerEarGrad)"
-          />
-
-          {/* Main Chubby Body */}
-          <path
-            d="M 16 46 C 14 26, 70 26, 68 46 C 70 68, 14 68, 16 46 Z"
-            fill="url(#mascotBodyGrad)"
-            stroke="#E2D0AC"
+          {/* Main Circular Character Body */}
+          <circle
+            cx="42"
+            cy="42"
+            r="32"
+            fill="url(#mascotCircleGrad)"
+            stroke="#EBDAC2"
             strokeWidth="1.8"
+          />
+
+          {/* Subtle glossy 3D highlight arc on upper-left */}
+          <ellipse
+            cx="33"
+            cy="24"
+            rx="13"
+            ry="6.5"
+            fill="#FFFFFF"
+            opacity="0.45"
+            transform="rotate(-22 33 24)"
           />
 
           {/* Rosy Glowing Cheeks */}
           <ellipse
-            cx="19"
-            cy="47"
+            cx="18"
+            cy="48"
             rx="5.5"
             ry="3.5"
             fill="#FF85A2"
@@ -230,8 +201,8 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             className="transition-opacity duration-300"
           />
           <ellipse
-            cx="65"
-            cy="47"
+            cx="66"
+            cy="48"
             rx="5.5"
             ry="3.5"
             fill="#FF85A2"
@@ -244,14 +215,14 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
           {mood === 'adding' ? (
             <g>
               <path
-                d="M 20 42 Q 28 30 36 42"
+                d="M 20 42 Q 29 29 38 42"
                 fill="none"
                 stroke="#2B2D42"
                 strokeWidth="3.2"
                 strokeLinecap="round"
               />
               <path
-                d="M 48 42 Q 56 30 64 42"
+                d="M 46 42 Q 55 29 64 42"
                 fill="none"
                 stroke="#2B2D42"
                 strokeWidth="3.2"
@@ -259,16 +230,17 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               />
               {/* Little celebration star above */}
               <path
-                d="M 42 16 L 43.5 20 L 47 21 L 43.5 22 L 42 26 L 40.5 22 L 37 21 L 40.5 20 Z"
+                className="star-sparkle"
+                d="M 42 12 L 43.5 16 L 47 17 L 43.5 18 L 42 22 L 40.5 18 L 37 17 L 40.5 16 Z"
                 fill="#FBBF24"
               />
             </g>
           ) : mood === 'completing' ? (
-            /* Mood: Completing -> Wink & Star (^ ~) */
+            /* Mood: Completing -> Celebratory Wink & Star (^ ~) */
             <g>
               {/* Left Eye: Happy Wink Arc */}
               <path
-                d="M 20 41 Q 28 32 36 41"
+                d="M 20 41 Q 29 31 38 41"
                 fill="none"
                 stroke="#2B2D42"
                 strokeWidth="3.2"
@@ -276,19 +248,20 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               />
               {/* Right Eye: Starry Proud Open Eye */}
               <ellipse
-                cx="56"
+                cx="55"
                 cy="40"
                 rx="9.5"
-                ry="12"
+                ry="12.5"
                 fill="#FFFFFF"
-                stroke="#E2D0AC"
+                stroke="#EBDAC2"
                 strokeWidth="1.2"
               />
               <g clipPath="url(#rightEyeClip)">
-                <circle cx="56" cy="40" r="7" fill="#1E293B" />
-                {/* Cute star in eye */}
+                <circle cx="55" cy="40" r="7.2" fill="#1E2337" />
+                {/* Celebratory yellow star inside eye */}
                 <path
-                  d="M 56 36 L 57 39 L 60 40 L 57 41 L 56 44 L 55 41 L 52 40 L 55 39 Z"
+                  className="eye-star"
+                  d="M 55 36 L 56 39 L 59 40 L 56 41 L 55 44 L 54 41 L 51 40 L 54 39 Z"
                   fill="#FDE047"
                 />
               </g>
@@ -297,39 +270,39 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             /* Mood: Deleting -> Shocked round O-eyes with tiny pupils */
             <g>
               <ellipse
-                cx="28"
+                cx="29"
                 cy="40"
                 rx="10"
-                ry="12"
+                ry="12.5"
                 fill="#FFFFFF"
-                stroke="#E2D0AC"
+                stroke="#EBDAC2"
                 strokeWidth="1.2"
               />
               <ellipse
-                cx="56"
+                cx="55"
                 cy="40"
                 rx="10"
-                ry="12"
+                ry="12.5"
                 fill="#FFFFFF"
-                stroke="#E2D0AC"
+                stroke="#EBDAC2"
                 strokeWidth="1.2"
               />
               {/* Tiny shocked pupils */}
-              <circle cx="28" cy="40" r="3.2" fill="#1E293B" />
-              <circle cx="56" cy="40" r="3.2" fill="#1E293B" />
+              <circle cx="29" cy="40" r="3.2" fill="#1E2337" />
+              <circle cx="55" cy="40" r="3.2" fill="#1E2337" />
             </g>
           ) : isBlinking ? (
             /* Natural Blinking Lines */
             <g>
               <path
-                d="M 20 40 Q 28 43 36 40"
+                d="M 20 40 Q 29 43 38 40"
                 fill="none"
                 stroke="#2B2D42"
                 strokeWidth="2.8"
                 strokeLinecap="round"
               />
               <path
-                d="M 48 40 Q 56 43 64 40"
+                d="M 46 40 Q 55 43 64 40"
                 fill="none"
                 stroke="#2B2D42"
                 strokeWidth="2.8"
@@ -342,24 +315,24 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               {/* Left Eye */}
               <g ref={leftEyeRef}>
                 <ellipse
-                  cx="28"
+                  cx="29"
                   cy="40"
                   rx="9.5"
-                  ry="12"
+                  ry="12.5"
                   fill="#FFFFFF"
-                  stroke="#E2D0AC"
+                  stroke="#EBDAC2"
                   strokeWidth="1.2"
                 />
                 <g clipPath="url(#leftEyeClip)">
                   {/* Pupil Group moving with cursor offset */}
                   <g transform={`translate(${pupils.lx}, ${pupils.ly})`}>
-                    <circle cx="28" cy="40" r="6.2" fill="#1E293B" />
+                    <circle cx="29" cy="40" r="6.6" fill="#1E2337" />
                     {/* Iris bottom reflection tint */}
-                    <ellipse cx="28" cy="43.5" rx="3.5" ry="1.8" fill="#60A5FA" opacity="0.65" />
+                    <ellipse cx="29" cy="43.8" rx="3.6" ry="1.9" fill="#38BDF8" opacity="0.75" />
                     {/* Big glossy catchlight */}
-                    <circle cx="25.5" cy="37.5" r="2.2" fill="#FFFFFF" />
+                    <circle cx="26.5" cy="37.2" r="2.3" fill="#FFFFFF" />
                     {/* Tiny bottom catchlight */}
-                    <circle cx="30" cy="42" r="1.1" fill="#FFFFFF" />
+                    <circle cx="31.2" cy="42" r="1.1" fill="#FFFFFF" />
                   </g>
                 </g>
               </g>
@@ -367,24 +340,24 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
               {/* Right Eye */}
               <g ref={rightEyeRef}>
                 <ellipse
-                  cx="56"
+                  cx="55"
                   cy="40"
                   rx="9.5"
-                  ry="12"
+                  ry="12.5"
                   fill="#FFFFFF"
-                  stroke="#E2D0AC"
+                  stroke="#EBDAC2"
                   strokeWidth="1.2"
                 />
                 <g clipPath="url(#rightEyeClip)">
                   {/* Pupil Group moving with cursor offset */}
                   <g transform={`translate(${pupils.rx}, ${pupils.ry})`}>
-                    <circle cx="56" cy="40" r="6.2" fill="#1E293B" />
+                    <circle cx="55" cy="40" r="6.6" fill="#1E2337" />
                     {/* Iris bottom reflection tint */}
-                    <ellipse cx="56" cy="43.5" rx="3.5" ry="1.8" fill="#60A5FA" opacity="0.65" />
+                    <ellipse cx="55" cy="43.8" rx="3.6" ry="1.9" fill="#38BDF8" opacity="0.75" />
                     {/* Big glossy catchlight */}
-                    <circle cx="53.5" cy="37.5" r="2.2" fill="#FFFFFF" />
+                    <circle cx="52.5" cy="37.2" r="2.3" fill="#FFFFFF" />
                     {/* Tiny bottom catchlight */}
-                    <circle cx="58" cy="42" r="1.1" fill="#FFFFFF" />
+                    <circle cx="57.2" cy="42" r="1.1" fill="#FFFFFF" />
                   </g>
                 </g>
               </g>
@@ -403,7 +376,7 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
           ) : mood === 'completing' ? (
             /* Proud happy curved grin */
             <path
-              d="M 36 49 Q 42 55 48 49"
+              d="M 36 49 Q 42 56 48 49"
               fill="none"
               stroke="#2B2D42"
               strokeWidth="2.2"
@@ -413,9 +386,9 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             /* Small round surprised O-mouth */
             <ellipse
               cx="42"
-              cy="52"
-              rx="3"
-              ry="4.5"
+              cy="53"
+              rx="3.2"
+              ry="4.8"
               fill="#2B2D42"
             />
           ) : mood === 'reordering' ? (
@@ -444,9 +417,9 @@ export default function MascotCharacter({ mood = 'idle', className = '' }: Masco
             />
           )}
 
-          {/* Tiny Little Cute Hands at the bottom */}
-          <ellipse cx="27" cy="62" rx="4.5" ry="3.5" fill="#FFF0D0" stroke="#E2D0AC" strokeWidth="1.2" />
-          <ellipse cx="57" cy="62" rx="4.5" ry="3.5" fill="#FFF0D0" stroke="#E2D0AC" strokeWidth="1.2" />
+          {/* Tiny Little Soft Hands resting at the bottom of the circle */}
+          <ellipse cx="32" cy="67" rx="4.8" ry="3.2" fill="#FFFDF7" stroke="#EBDAC2" strokeWidth="1.3" />
+          <ellipse cx="52" cy="67" rx="4.8" ry="3.2" fill="#FFFDF7" stroke="#EBDAC2" strokeWidth="1.3" />
         </svg>
       </div>
     </div>

@@ -11,7 +11,7 @@ export interface Todo {
   createdAt: number;
 }
 
-type FilterType = 'all' | 'active' | 'completed';
+type FilterType = 'active' | 'completed';
 
 const STORAGE_KEY = 'minimal_todo_tasks';
 
@@ -58,7 +58,7 @@ const todosStore = {
 
 export default function TodoApp() {
   const [inputText, setInputText] = useState('');
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>('active');
   const [mascotMood, setMascotMood] = useState<MascotMood>('idle');
   const moodTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -124,24 +124,23 @@ export default function TodoApp() {
     const updated = todos.filter((todo) => !todo.completed);
     todosStore.save(updated);
     triggerMood('deleting');
-    setFilter('all');
+    setFilter('active');
   };
 
   const completedCount = todos.filter((t) => t.completed).length;
 
-  // Derived effective filter: if no completed tasks remain, fallback to 'all'
-  const activeFilter = filter === 'completed' && completedCount === 0 ? 'all' : filter;
+  // Derived effective filter: if no completed tasks remain, fallback to 'active'
+  const activeFilter = filter === 'completed' && completedCount === 0 ? 'active' : filter;
 
   // Available tabs: only show 'completed' tab if completedCount > 0
   const availableTabs: FilterType[] = useMemo(() => {
-    return completedCount > 0 ? ['all', 'active', 'completed'] : ['all', 'active'];
+    return completedCount > 0 ? ['active', 'completed'] : ['active'];
   }, [completedCount]);
 
   const filteredTodos = useMemo(() => {
     return todos.filter((todo) => {
-      if (activeFilter === 'active') return !todo.completed;
       if (activeFilter === 'completed') return todo.completed;
-      return true;
+      return !todo.completed;
     });
   }, [todos, activeFilter]);
 
