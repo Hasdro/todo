@@ -11,27 +11,33 @@ const EYES = [
   { cx: 32.5, cy: 35 },
   { cx: 51.5, cy: 35 },
 ];
-const MAX_GAZE = 2.4;
+const MAX_GAZE = 4.2;
 
 export default function MascotCharacter({ className = '' }: MascotProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const floatRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<SVGEllipseElement>(null);
   const eyesGazeRef = useRef<SVGGElement>(null);
+  const faceGroupRef = useRef<SVGGElement>(null);
   const pointerTarget = useRef({ x: 0, y: 0 });
 
   const [isBlinking, setIsBlinking] = useState(false);
 
-  /* Pointer tracking (also while dragging tasks) */
+  /* Pointer tracking (attentive cursor following, also while dragging tasks) */
   useEffect(() => {
     const track = (clientX: number, clientY: number) => {
       const svg = svgRef.current;
       if (!svg) return;
       const rect = svg.getBoundingClientRect();
-      const dx = clientX - (rect.left + rect.width / 2);
-      const dy = clientY - (rect.top + rect.height * 0.42);
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height * 0.42;
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const dist = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx);
-      const r = Math.min(MAX_GAZE, Math.hypot(dx, dy) / 40);
+      // Follow cursor attentively: attentive gaze across the screen
+      const intensity = Math.min(1, Math.max(0.45, dist / 180));
+      const r = MAX_GAZE * intensity;
       pointerTarget.current = { x: Math.cos(angle) * r, y: Math.sin(angle) * r };
     };
     const onPointer = (e: PointerEvent) => track(e.clientX, e.clientY);
@@ -45,7 +51,7 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
     };
   }, []);
 
-  /* Float, breathe and gaze loop — updates the DOM directly, no re-renders */
+  /* Float, breathe, and highly attentive gaze loop — updates DOM directly without React re-renders */
   useEffect(() => {
     const reduceMotion =
       typeof window.matchMedia === 'function' &&
@@ -57,23 +63,33 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
 
     const loop = (now: number) => {
       const target = pointerTarget.current;
-      gaze.x += (target.x - gaze.x) * 0.16;
-      gaze.y += (target.y - gaze.y) * 0.16;
+      // Responsive lerp (0.3) for eager, attentive cursor following
+      gaze.x += (target.x - gaze.x) * 0.3;
+      gaze.y += (target.y - gaze.y) * 0.3;
+
       eyesGazeRef.current?.setAttribute(
         'transform',
         `translate(${gaze.x.toFixed(2)} ${gaze.y.toFixed(2)})`
+      );
+
+      // Subtle face micro-tilt towards cursor for added attentiveness
+      faceGroupRef.current?.setAttribute(
+        'transform',
+        `translate(${(gaze.x * 0.35).toFixed(2)} ${(gaze.y * 0.3).toFixed(2)})`
       );
 
       if (!reduceMotion) {
         const phase = (((now - start) / 1000) * Math.PI * 2) / 3.2;
         const float = Math.sin(phase) * 2.6;
         const breath = 1 + Math.cos(phase) * 0.018;
+        const tilt = (gaze.x * 0.9).toFixed(2);
         if (floatRef.current) {
-          floatRef.current.style.transform = `translateY(${float.toFixed(2)}px) scale(${breath.toFixed(4)})`;
+          floatRef.current.style.transform = `translate(${(gaze.x * 0.4).toFixed(2)}px, ${(float + gaze.y * 0.2).toFixed(2)}px) rotate(${tilt}deg) scale(${breath.toFixed(4)})`;
         }
         if (shadowRef.current) {
           shadowRef.current.setAttribute('rx', (15 - float * 0.7).toFixed(2));
           shadowRef.current.setAttribute('opacity', (0.14 + float * 0.015).toFixed(3));
+          shadowRef.current.setAttribute('cx', (42 + gaze.x * 0.5).toFixed(2));
         }
       }
       raf = requestAnimationFrame(loop);
@@ -132,21 +148,7 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
         <ellipse ref={shadowRef} cx="42" cy="79" rx="15" ry="2.6" fill="#6366F1" opacity="0.14" />
 
         <g filter="url(#ghostShadow)">
-          {/* Arms */}
-          <path
-            d="M 20 44 C 12.5 44.5, 11.5 51, 16 53 C 19 54.2, 21 50.5, 20.5 46.5 Z"
-            fill="url(#ghostBodyGrad)"
-            stroke="#C7D2FE"
-            strokeWidth="1"
-          />
-          <path
-            d="M 64 44 C 71.5 44.5, 72.5 51, 68 53 C 65 54.2, 63 50.5, 63.5 46.5 Z"
-            fill="url(#ghostBodyGrad)"
-            stroke="#C7D2FE"
-            strokeWidth="1"
-          />
-
-          {/* Body with scalloped hem */}
+          {/* Body with scalloped hem - hands removed as requested */}
           <path
             data-testid="ghost-body"
             d="M 18 42
@@ -167,37 +169,43 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
         {/* Soft sheen */}
         <ellipse cx="33" cy="21" rx="11" ry="7" fill="url(#ghostSheen)" transform="rotate(-18 33 21)" />
 
-        {/* Cheeks */}
-        <g opacity="0.4">
-          <ellipse cx="24.5" cy="46.5" rx="3.8" ry="2.3" fill="#FDA4AF" />
-          <ellipse cx="59.5" cy="46.5" rx="3.8" ry="2.3" fill="#FDA4AF" />
-        </g>
+        {/* Face group with micro-movement */}
+        <g ref={faceGroupRef}>
+          {/* Cheeks */}
+          <g opacity="0.4">
+            <ellipse cx="24.5" cy="46.5" rx="3.8" ry="2.3" fill="#FDA4AF" />
+            <ellipse cx="59.5" cy="46.5" rx="3.8" ry="2.3" fill="#FDA4AF" />
+          </g>
 
-        {/* Big eyes */}
-        <g ref={eyesGazeRef}>
-          {EYES.map((c, i) => (
-            <g
-              key={i}
-              data-testid="ghost-eye"
-              className={`mascot-eye ${isBlinking ? 'mascot-blink' : ''}`}
-              style={{ transform: `scaleY(${isBlinking ? 0.08 : 1})` }}
-            >
-              <ellipse cx={c.cx} cy={c.cy} rx="6.2" ry="7.8" fill={INK} />
-              <circle cx={c.cx - 2.1} cy={c.cy - 2.9} r="2.2" fill="#FFFFFF" />
-              <circle cx={c.cx + 2.1} cy={c.cy + 3} r="1" fill="#FFFFFF" opacity="0.85" />
-            </g>
-          ))}
-        </g>
+          {/* Big attentive eyes */}
+          <g ref={eyesGazeRef}>
+            {EYES.map((c, i) => (
+              <g
+                key={i}
+                data-testid="ghost-eye"
+                className={`mascot-eye ${isBlinking ? 'mascot-blink' : ''}`}
+                style={{
+                  transformOrigin: `${c.cx}px ${c.cy}px`,
+                  transform: `scaleY(${isBlinking ? 0.08 : 1})`,
+                }}
+              >
+                <ellipse cx={c.cx} cy={c.cy} rx="6.2" ry="7.8" fill={INK} />
+                <circle cx={c.cx - 2.1} cy={c.cy - 2.9} r="2.2" fill="#FFFFFF" />
+                <circle cx={c.cx + 2.1} cy={c.cy + 3} r="1" fill="#FFFFFF" opacity="0.85" />
+              </g>
+            ))}
+          </g>
 
-        {/* Smile */}
-        <path
-          data-testid="ghost-smile"
-          d="M 39 47.5 Q 42 50.6 45 47.5"
-          fill="none"
-          stroke={INK}
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
+          {/* Calm, sweet smile */}
+          <path
+            data-testid="ghost-smile"
+            d="M 39 47.5 Q 42 50.6 45 47.5"
+            fill="none"
+            stroke={INK}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </g>
       </svg>
     </div>
   );

@@ -13,7 +13,7 @@ describe('MascotCharacter ghost', () => {
     expect(container.querySelector('#ghostBodyGrad')).toBeInTheDocument();
   });
 
-  it('has two big eyes and a calm, constant smile', () => {
+  it('has two big eyes and a calm, constant smile without any hands/arms', () => {
     const { container } = render(<MascotCharacter />);
     const eyes = container.querySelectorAll('[data-testid="ghost-eye"]');
     expect(eyes).toHaveLength(2);
@@ -23,5 +23,13 @@ describe('MascotCharacter ghost', () => {
       expect(Number(ellipse?.getAttribute('ry'))).toBeGreaterThanOrEqual(7.5);
     });
     expect(container.querySelector('[data-testid="ghost-smile"]')).toBeInTheDocument();
+
+    // Verify arms/hands paths are completely removed
+    const paths = Array.from(container.querySelectorAll('path'));
+    const armPaths = paths.filter((p) => {
+      const d = p.getAttribute('d') || '';
+      return d.includes('M 20 44') || d.includes('M 64 44');
+    });
+    expect(armPaths).toHaveLength(0);
   });
 });

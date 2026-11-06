@@ -1,106 +1,200 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
-import TodoApp from '../TodoApp';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import TodoApp, {
+  CACHE_TTL_MS,
+  parseStoredTodos,
+  createTodoItem,
+} from '../TodoApp';
 
-describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
+describe('TodoApp', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it('renders input, modern Add button, and mascot without any tabs when no tasks exist', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('renders input and mascot without Add button or any tabs when no tasks exist', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
     expect(input).toBeInTheDocument();
 
-    const addButton = screen.getByRole('button', { name: /add/i });
-    expect(addButton).toBeInTheDocument();
-    expect(addButton.className).toContain('bg-white');
+    // No Add button (user hits Enter to add)
+    expect(screen.queryByRole('button', { name: /^add$/i })).not.toBeInTheDocument();
 
-    // When there is no task, do not even show the active tasks tab or completed tab
+    // No tabs or filter bar when no tasks exist
     expect(screen.queryByRole('button', { name: /^all$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /completed/i })).not.toBeInTheDocument();
   });
 
-  it('shows Active tab when active task exists, and Completed tab when completed task exists', () => {
+  it('adds a new task at the top on Enter key press', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
-    const addButton = screen.getByRole('button', { name: /add/i });
 
-    // Initially no tabs
-    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
-
-    // Add an active task
+    // Add first task
     fireEvent.change(input, { target: { value: 'Task 1' } });
-    fireEvent.click(addButton);
+    fireEvent.submit(input.closest('form')!);
 
-    // Active tab now appears! Completed tab is still hidden
-    expect(screen.getByRole('button', { name: /^active$/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Task 1')).toBeInTheDocument();
 
-    // Mark as complete
-    const checkbox = screen.getByRole('checkbox', { name: /mark "Task 1" as complete/i });
+    // Add second task
+    fireEvent.change(input, { target: { value: 'Task 2' } });
+    fireEvent.submit(input.closest('form')!);
+
+    // New item must be on top!
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent('Task 2');
+    expect(items[1]).toHaveTextContent('Task 1');
+  });
+
+  it('renders items with compact vertical spacing and delete button hidden by default', () => {
+    render(<TodoApp />);
+    const input = screen.getByRole('textbox', { name: /new task/i });
+
+    fireEvent.change(input, { target: { value: 'Compact Task' } });
+    fireEvent.submit(input.closest('form')!);
+
+    const item = screen.getByRole('listitem');
+    expect(item.className).toContain('py-2.5');
+
+    // Delete button should have opacity-0 so it only shows on hover
+    const deleteBtn = screen.getByRole('button', { name: /delete "Compact Task"/i });
+    expect(deleteBtn.className).toContain('opacity-0');
+    expect(deleteBtn.className).toContain('group-hover:opacity-100');
+  });
+
+  it('shows active tasks by default without an Active button, and shows Completed toggle when completed tasks exist', () => {
+    render(<TodoApp />);
+    const input = screen.getByRole('textbox', { name: /new task/i });
+
+    // Add active task
+    fireEvent.change(input, { target: { value: 'Active Task' } });
+    fireEvent.submit(input.closest('form')!);
+
+    // No Active button shown
+    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
+    // No Completed toggle yet since 0 completed tasks
+    expect(screen.queryByRole('button', { name: /completed/i })).not.toBeInTheDocument();
+
+    // Mark task as complete
+    const checkbox = screen.getByRole('checkbox', { name: /mark "Active Task" as complete/i });
     fireEvent.click(checkbox);
 
-    // Completed tab now appears! And since activeCount is 0, Active tab is hidden
-    expect(screen.getByRole('button', { name: /^completed$/i })).toBeInTheDocument();
+    // Completed toggle button now appears!
+    const completedToggle = screen.getByRole('button', { name: /completed/i });
+    expect(completedToggle).toBeInTheDocument();
+    // Still no Active button
     expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
   });
 
-  it('shows Clear Completed button only when Completed tab is selected and clears tasks', () => {
+  it('switches between active and completed views using the Completed toggle button', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
-    const addButton = screen.getByRole('button', { name: /add/i });
 
-    fireEvent.change(input, { target: { value: 'Task to finish' } });
-    fireEvent.click(addButton);
+    fireEvent.change(input, { target: { value: 'Task to complete' } });
+    fireEvent.submit(input.closest('form')!);
 
     fireEvent.change(input, { target: { value: 'Task to keep active' } });
-    fireEvent.click(addButton);
+    fireEvent.submit(input.closest('form')!);
 
-    const checkbox = screen.getByRole('checkbox', { name: /mark "Task to finish" as complete/i });
+    // Complete the first task
+    const checkbox = screen.getByRole('checkbox', {
+      name: /mark "Task to complete" as complete/i,
+    });
     fireEvent.click(checkbox);
 
-    // On 'active' tab, Clear completed button is not shown
-    expect(screen.queryByRole('button', { name: /clear completed/i })).not.toBeInTheDocument();
+    // Default view shows active tasks
+    expect(screen.getByText('Task to keep active')).toBeInTheDocument();
+    expect(screen.queryByText('Task to complete')).not.toBeInTheDocument();
 
-    // Click 'Completed' tab
-    const completedTab = screen.getByRole('button', { name: /^completed$/i });
-    fireEvent.click(completedTab);
+    // Click Completed toggle
+    const completedToggle = screen.getByRole('button', { name: /completed/i });
+    fireEvent.click(completedToggle);
 
-    // Now Clear completed button is visible
-    const clearBtn = screen.getByRole('button', { name: /clear completed \(1\)/i });
-    expect(clearBtn).toBeInTheDocument();
+    // Now viewing completed tasks
+    expect(screen.getByText('Task to complete')).toBeInTheDocument();
+    expect(screen.queryByText('Task to keep active')).not.toBeInTheDocument();
+
+    // Click Completed toggle again (unselect it) -> returns to active tasks
+    fireEvent.click(completedToggle);
+    expect(screen.getByText('Task to keep active')).toBeInTheDocument();
+    expect(screen.queryByText('Task to complete')).not.toBeInTheDocument();
+  });
+
+  it('shows Clear all button when active tasks exist and clears all active items at once', () => {
+    render(<TodoApp />);
+    const input = screen.getByRole('textbox', { name: /new task/i });
+
+    fireEvent.change(input, { target: { value: 'Task 1' } });
+    fireEvent.submit(input.closest('form')!);
+
+    fireEvent.change(input, { target: { value: 'Task 2' } });
+    fireEvent.submit(input.closest('form')!);
+
+    // "Clear all" button appears
+    const clearAllBtn = screen.getByRole('button', { name: /clear all/i });
+    expect(clearAllBtn).toBeInTheDocument();
+
+    // Click Clear all
+    fireEvent.click(clearAllBtn);
+
+    // Active tasks removed
+    expect(screen.queryByText('Task 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Task 2')).not.toBeInTheDocument();
+    // With 0 tasks, filter bar is gone
+    expect(screen.queryByRole('button', { name: /clear all/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Clear completed button when viewing completed tasks and removes completed tasks', () => {
+    render(<TodoApp />);
+    const input = screen.getByRole('textbox', { name: /new task/i });
+
+    fireEvent.change(input, { target: { value: 'Finish me' } });
+    fireEvent.submit(input.closest('form')!);
+
+    fireEvent.change(input, { target: { value: 'Stay active' } });
+    fireEvent.submit(input.closest('form')!);
+
+    const checkbox = screen.getByRole('checkbox', { name: /mark "Finish me" as complete/i });
+    fireEvent.click(checkbox);
+
+    // Switch to Completed view
+    const completedToggle = screen.getByRole('button', { name: /completed/i });
+    fireEvent.click(completedToggle);
+
+    // Clear completed button is visible
+    const clearCompletedBtn = screen.getByRole('button', { name: /clear completed/i });
+    expect(clearCompletedBtn).toBeInTheDocument();
 
     // Click Clear completed
-    fireEvent.click(clearBtn);
+    fireEvent.click(clearCompletedBtn);
 
-    // Completed task removed from memory & state
-    expect(screen.queryByText('Task to finish')).not.toBeInTheDocument();
-    // Active task is still there
-    expect(screen.getByText('Task to keep active')).toBeInTheDocument();
-    // Completed tab disappears because 0 completed tasks remain
-    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
+    // Finished task removed
+    expect(screen.queryByText('Finish me')).not.toBeInTheDocument();
+    // Returned to active view where "Stay active" exists
+    expect(screen.getByText('Stay active')).toBeInTheDocument();
+    // Completed toggle is hidden since 0 completed tasks remain
+    expect(screen.queryByRole('button', { name: /completed/i })).not.toBeInTheDocument();
   });
 
   it('supports drag and drop reordering', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
-    const addButton = screen.getByRole('button', { name: /add/i });
 
     fireEvent.change(input, { target: { value: 'First Task' } });
-    fireEvent.click(addButton);
+    fireEvent.submit(input.closest('form')!);
 
     fireEvent.change(input, { target: { value: 'Second Task' } });
-    fireEvent.click(addButton);
+    fireEvent.submit(input.closest('form')!);
 
     const items = screen.getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('Second Task');
     expect(items[1]).toHaveTextContent('First Task');
 
-    // Simulate drag and drop
     const dataTransfer = {
       setData: () => {},
       getData: () => '',
@@ -113,25 +207,31 @@ describe('TodoApp with Mascot, DnD, and Dynamic Tabs', () => {
     fireEvent.drop(items[1], { dataTransfer });
     fireEvent.dragEnd(items[0]);
 
-    // Order reversed
     const updatedItems = screen.getAllByRole('listitem');
     expect(updatedItems[0]).toHaveTextContent('First Task');
     expect(updatedItems[1]).toHaveTextContent('Second Task');
   });
 
-  it('deletes a task', () => {
-    render(<TodoApp />);
-    const input = screen.getByRole('textbox', { name: /new task/i });
-    const addButton = screen.getByRole('button', { name: /add/i });
+  it('expires cache after 12 hours so task list is not saved there the next day', () => {
+    const now = 1700000000000;
+    const task = createTodoItem('Test Task');
+    task.createdAt = now;
 
-    fireEvent.change(input, { target: { value: 'Task to delete' } });
-    fireEvent.click(addButton);
+    // Within 12 hours (e.g. 11 hours later): should still be valid
+    const validRaw = JSON.stringify({
+      todos: [task],
+      updatedAt: now,
+    });
+    const within12Hours = parseStoredTodos(validRaw, now + 11 * 3600 * 1000);
+    expect(within12Hours).toHaveLength(1);
+    expect(within12Hours[0].text).toBe('Test Task');
 
-    expect(screen.getByText('Task to delete')).toBeInTheDocument();
-
-    const deleteBtn = screen.getByRole('button', { name: /delete "Task to delete"/i });
-    fireEvent.click(deleteBtn);
-
-    expect(screen.queryByText('Task to delete')).not.toBeInTheDocument();
+    // After 12 hours (e.g. 12 hours and 1 minute later): should expire and return empty
+    const expiredRaw = JSON.stringify({
+      todos: [task],
+      updatedAt: now,
+    });
+    const after12Hours = parseStoredTodos(expiredRaw, now + CACHE_TTL_MS + 60000);
+    expect(after12Hours).toHaveLength(0);
   });
 });
