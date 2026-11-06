@@ -27,11 +27,5 @@ body {
 
 /* ---------------- Mascot ---------------- */
 .mascot-eye {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 140ms ease;
-}
-
-.mascot-blink {
-  transition-duration: 70ms;
+  will-change: transform, opacity;
 }

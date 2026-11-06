@@ -106,14 +106,14 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
       timers.push(
         setTimeout(() => {
           setIsBlinking(true);
-          timers.push(setTimeout(() => setIsBlinking(false), 120));
+          timers.push(setTimeout(() => setIsBlinking(false), 130));
         }, after)
       );
     const schedule = () => {
       timers.push(
         setTimeout(() => {
           blinkOnce(0);
-          if (Math.random() < 0.22) blinkOnce(260);
+          if (Math.random() < 0.2) blinkOnce(240);
           schedule();
         }, 2800 + Math.random() * 3200)
       );
@@ -177,21 +177,39 @@ export default function MascotCharacter({ className = '' }: MascotProps) {
             <ellipse cx="59.5" cy="46.5" rx="3.8" ry="2.3" fill="#FDA4AF" />
           </g>
 
-          {/* Big attentive eyes */}
+          {/* Big attentive eyes with natural eyelid blink */}
           <g ref={eyesGazeRef}>
             {EYES.map((c, i) => (
-              <g
-                key={i}
-                data-testid="ghost-eye"
-                className={`mascot-eye ${isBlinking ? 'mascot-blink' : ''}`}
-                style={{
-                  transformOrigin: `${c.cx}px ${c.cy}px`,
-                  transform: `scaleY(${isBlinking ? 0.08 : 1})`,
-                }}
-              >
-                <ellipse cx={c.cx} cy={c.cy} rx="6.2" ry="7.8" fill={INK} />
-                <circle cx={c.cx - 2.1} cy={c.cy - 2.9} r="2.2" fill="#FFFFFF" />
-                <circle cx={c.cx + 2.1} cy={c.cy + 3} r="1" fill="#FFFFFF" opacity="0.85" />
+              <g key={i} data-testid="ghost-eye" className="mascot-eye">
+                {/* Open eye (pupil & sparkle highlights) */}
+                <g
+                  style={{
+                    opacity: isBlinking ? 0 : 1,
+                    transformOrigin: `${c.cx}px ${c.cy + 6}px`,
+                    transform: isBlinking ? 'scaleY(0.08)' : 'scaleY(1)',
+                    transition:
+                      'opacity 75ms ease, transform 85ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                >
+                  <ellipse cx={c.cx} cy={c.cy} rx="6.2" ry="7.8" fill={INK} />
+                  <circle cx={c.cx - 2.1} cy={c.cy - 2.9} r="2.2" fill="#FFFFFF" />
+                  <circle cx={c.cx + 2.1} cy={c.cy + 3} r="1" fill="#FFFFFF" opacity="0.85" />
+                </g>
+
+                {/* Natural closed eyelid curved lash line when blinking */}
+                <path
+                  d={`M ${c.cx - 6} ${c.cy + 2.5} Q ${c.cx} ${c.cy + 5.8} ${c.cx + 6} ${c.cy + 2.5}`}
+                  fill="none"
+                  stroke={INK}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  style={{
+                    opacity: isBlinking ? 1 : 0,
+                    transformOrigin: `${c.cx}px ${c.cy + 2.5}px`,
+                    transform: isBlinking ? 'scale(1)' : 'scale(0.75)',
+                    transition: 'opacity 60ms ease, transform 75ms ease',
+                  }}
+                />
               </g>
             ))}
           </g>

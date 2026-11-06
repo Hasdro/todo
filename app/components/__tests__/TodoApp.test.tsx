@@ -59,7 +59,7 @@ describe('TodoApp', () => {
     fireEvent.submit(input.closest('form')!);
 
     const item = screen.getByRole('listitem');
-    expect(item.className).toContain('py-2.5');
+    expect(item.className).toContain('py-1.5');
 
     // Delete button should have opacity-0 so it only shows on hover
     const deleteBtn = screen.getByRole('button', { name: /delete "Compact Task"/i });
@@ -67,7 +67,7 @@ describe('TodoApp', () => {
     expect(deleteBtn.className).toContain('group-hover:opacity-100');
   });
 
-  it('shows active tasks by default without an Active button, and shows Completed toggle when completed tasks exist', () => {
+  it('shows active tasks by default without written text tabs, and shows icon toggle when completed tasks exist', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
 
@@ -75,23 +75,26 @@ describe('TodoApp', () => {
     fireEvent.change(input, { target: { value: 'Active Task' } });
     fireEvent.submit(input.closest('form')!);
 
-    // No Active button shown
+    // No written Active or Completed text buttons
     expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
-    // No Completed toggle yet since 0 completed tasks
-    expect(screen.queryByRole('button', { name: /completed/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^completed$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /completed tasks/i })).not.toBeInTheDocument();
 
     // Mark task as complete
     const checkbox = screen.getByRole('checkbox', { name: /mark "Active Task" as complete/i });
     fireEvent.click(checkbox);
 
-    // Completed toggle button now appears!
-    const completedToggle = screen.getByRole('button', { name: /completed/i });
-    expect(completedToggle).toBeInTheDocument();
-    // Still no Active button
-    expect(screen.queryByRole('button', { name: /^active$/i })).not.toBeInTheDocument();
+    // Completed icon toggle now appears (no written words "Completed" or "Active" in the button content)
+    const completedIconBtn = screen.getByRole('button', { name: /completed tasks/i });
+    expect(completedIconBtn).toBeInTheDocument();
+    expect(completedIconBtn).not.toHaveTextContent(/^completed$/i);
+
+    const activeIconBtn = screen.getByRole('button', { name: /active tasks/i });
+    expect(activeIconBtn).toBeInTheDocument();
+    expect(activeIconBtn).not.toHaveTextContent(/^active$/i);
   });
 
-  it('switches between active and completed views using the Completed toggle button', () => {
+  it('switches between active and completed views using the icon toggle buttons', () => {
     render(<TodoApp />);
     const input = screen.getByRole('textbox', { name: /new task/i });
 
@@ -111,16 +114,17 @@ describe('TodoApp', () => {
     expect(screen.getByText('Task to keep active')).toBeInTheDocument();
     expect(screen.queryByText('Task to complete')).not.toBeInTheDocument();
 
-    // Click Completed toggle
-    const completedToggle = screen.getByRole('button', { name: /completed/i });
-    fireEvent.click(completedToggle);
+    // Click Completed icon button
+    const completedIconBtn = screen.getByRole('button', { name: /completed tasks/i });
+    fireEvent.click(completedIconBtn);
 
     // Now viewing completed tasks
     expect(screen.getByText('Task to complete')).toBeInTheDocument();
     expect(screen.queryByText('Task to keep active')).not.toBeInTheDocument();
 
-    // Click Completed toggle again (unselect it) -> returns to active tasks
-    fireEvent.click(completedToggle);
+    // Click Active icon button -> returns to active tasks
+    const activeIconBtn = screen.getByRole('button', { name: /active tasks/i });
+    fireEvent.click(activeIconBtn);
     expect(screen.getByText('Task to keep active')).toBeInTheDocument();
     expect(screen.queryByText('Task to complete')).not.toBeInTheDocument();
   });

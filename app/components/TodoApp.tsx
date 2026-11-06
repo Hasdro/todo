@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useSyncExternalStore } from 'react';
-import { Check, Trash2, GripVertical } from 'lucide-react';
+import { Check, Trash2, GripVertical, ListTodo } from 'lucide-react';
 import MascotCharacter from './MascotCharacter';
 
 export interface Todo {
@@ -274,25 +274,46 @@ export default function TodoApp() {
 
         {/* Filter / Actions Bar - only rendered if tasks exist */}
         {todos.length > 0 && (
-          <div className="px-4 sm:px-5 py-2.5 bg-zinc-50/70 dark:bg-zinc-900/60 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 min-h-[44px]">
-            {/* Left side: Completed toggle (only shown when completed tasks exist; no Active button) */}
+          <div className="px-3.5 sm:px-4 py-2 bg-zinc-50/70 dark:bg-zinc-900/60 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 min-h-[40px]">
+            {/* Left side: Icon toggle between Active and Completed windows (no text labels) */}
             <div className="flex items-center">
               {completedCount > 0 && (
-                <button
-                  type="button"
-                  aria-pressed={isViewingCompleted}
-                  onClick={() => setShowCompleted((prev) => !prev)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    isViewingCompleted
-                      ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-200/80 dark:border-zinc-700'
-                      : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70'
-                  }`}
-                >
-                  <span>Completed</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-200/60 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-300">
-                    {completedCount}
-                  </span>
-                </button>
+                <div className="inline-flex items-center p-0.5 rounded-lg bg-zinc-100/90 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60">
+                  {/* Active window button (icon only) */}
+                  <button
+                    type="button"
+                    aria-label="Active tasks"
+                    title="Active tasks"
+                    aria-pressed={!isViewingCompleted}
+                    onClick={() => setShowCompleted(false)}
+                    className={`inline-flex items-center justify-center p-1.5 rounded-md text-xs transition-all cursor-pointer ${
+                      !isViewingCompleted
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                        : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                    }`}
+                  >
+                    <ListTodo className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Completed window button (icon + count, no text) */}
+                  <button
+                    type="button"
+                    aria-label="Completed tasks"
+                    title="Completed tasks"
+                    aria-pressed={isViewingCompleted}
+                    onClick={() => setShowCompleted((prev) => !prev)}
+                    className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                      isViewingCompleted
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                        : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span className="text-[10px] px-1 rounded-full bg-zinc-200/80 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-200">
+                      {completedCount}
+                    </span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -304,7 +325,7 @@ export default function TodoApp() {
                   type="button"
                   onClick={clearAllActive}
                   aria-label="Clear all active tasks"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear all ({activeCount})</span>
@@ -317,7 +338,7 @@ export default function TodoApp() {
                   type="button"
                   onClick={clearCompleted}
                   aria-label="Clear completed tasks"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear completed ({completedCount})</span>
@@ -327,7 +348,7 @@ export default function TodoApp() {
           </div>
         )}
 
-        {/* Todo List with Drag & Drop Reordering and Compact Spacing */}
+        {/* Todo List with Drag & Drop Reordering and Ultra-Compact Spacing */}
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 min-h-[380px] max-h-[600px] overflow-y-auto">
           {filteredTodos.length > 0 ? (
             <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -343,7 +364,7 @@ export default function TodoApp() {
                     onDragOver={(e) => handleDragOver(e, todo.id)}
                     onDrop={(e) => handleDrop(e, todo.id)}
                     onDragEnd={handleDragEnd}
-                    className={`group flex items-center justify-between py-2.5 px-4 sm:py-3 sm:px-5 transition-all select-none ${
+                    className={`group flex items-center justify-between py-1.5 px-3.5 sm:py-2 sm:px-4 transition-all select-none ${
                       isDragging
                         ? 'opacity-35 bg-zinc-100 dark:bg-zinc-800/80 scale-[0.99]'
                         : 'hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40'
@@ -353,17 +374,17 @@ export default function TodoApp() {
                         : ''
                     }`}
                   >
-                    <div className="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-3">
+                    <div className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 pr-2">
                       {/* Drag Grip Handle */}
                       <div
-                        className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 cursor-grab active:cursor-grabbing p-1 -ml-1 transition-colors"
+                        className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 cursor-grab active:cursor-grabbing p-0.5 -ml-1 transition-colors"
                         title="Drag to reorder"
                       >
-                        <GripVertical className="w-4 h-4" />
+                        <GripVertical className="w-3.5 h-3.5" />
                       </div>
 
                       {/* Custom Checkbox */}
-                      <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                      <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
                         <input
                           type="checkbox"
                           checked={todo.completed}
@@ -374,16 +395,16 @@ export default function TodoApp() {
                           }`}
                         />
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors shrink-0 ${
+                          className={`w-4.5 h-4.5 rounded-md flex items-center justify-center border transition-colors shrink-0 ${
                             todo.completed
                               ? 'bg-blue-600 border-blue-600 text-white dark:bg-blue-500 dark:border-blue-500'
                               : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400'
                           }`}
                         >
-                          {todo.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          {todo.completed && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
                         <span
-                          className={`text-sm sm:text-base truncate select-none transition-all ${
+                          className={`text-sm leading-snug truncate select-none transition-all ${
                             todo.completed
                               ? 'line-through text-zinc-400 dark:text-zinc-500'
                               : 'text-zinc-800 dark:text-zinc-200'
@@ -399,9 +420,9 @@ export default function TodoApp() {
                       type="button"
                       onClick={() => deleteTodo(todo.id)}
                       aria-label={`delete "${todo.text}"`}
-                      className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 p-1.5 sm:p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                      className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 p-1 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </li>
                 );
